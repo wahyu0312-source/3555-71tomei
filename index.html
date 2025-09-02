@@ -280,7 +280,10 @@
     function formatSuffix(num){ const s = String(num); return s.length >= PAD_DIGITS ? s : ('0'.repeat(PAD_DIGITS - s.length) + s); }
     function setSerialSuffix(num){ const s = formatSuffix(num); const inp = document.querySelector('input[name="serial_no_suffix"]'); if(!inp) return; inp.value = s; inp.dispatchEvent(new Event('input', { bubbles:true })); markSoftRequired(); }
     function wireSerialMirror() { const out = document.querySelector('[data-serial-print]'); const inp = document.querySelector('input[name="serial_no_suffix"]'); if (!out) return; const upd = () => { out.textContent = getSerialFull(); }; inp?.addEventListener('input', upd); upd(); }
-    function computePrefixFromZuban(z){ const digits=String(z||'').replace(/[^0-9]/g,''); return digits ? `Y${digits}-` : 'Y-'; }
+   function computePrefixFromZuban(z){
+  const digits = String(z||'').replace(/[^0-9]/g,'');
+  return digits ? `${digits}-` : '';
+}
     function applyPrefix(){ const z = getZuban(); const pref = computePrefixFromZuban(z); const span = document.querySelector('.serial-prefix'); if(span) span.textContent = pref; }
 
     /* ---------- GAS API ---------- */

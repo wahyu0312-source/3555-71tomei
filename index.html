@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>出荷検査成績書 NTY3-100V</title>
+  <title>出荷検査成績書 3555-7 NTY3-100V</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -63,15 +63,18 @@
     .td-measure-grid input.invalid { background:#ffebee; box-shadow:inset 0 0 0 1px #d32f2f; }
     .company-name { display:none !important; }
     .inspection-table th { background:#fff !important; }
+      .toolbar .key-badge { border:1px dashed #bbb; padding:6px 10px; border-radius:8px; font-size:13px; background:#f9fafb; align-self:center; }
   </style>
 </head>
 <body>
   <!-- toolbar -->
   <div class="toolbar">
     <button type="button" onclick="printViaPDF()">🖨️ 印刷</button>
+    <button type="button" onclick="selectNASFolder()">📁 フォルダ選択</button>
     <button type="button" onclick="saveToNASFixed()">💾 NAS保存</button>
+    <span id="folderKeyBadge" class="key-badge" title="保存フォルダキー">📁 Tomei_NTY3-100V</span>
     <button type="button" onclick="clearAllFields()">🧹 全てクリア</button>
-    <button type="button" onclick="configureNextSerial()">🔢 番号設定</button>
+    <button type="button" onclick="configureNextSerial()">🔢 次番号設定</button>
     <button type="button" onclick="configureDigits()">#️⃣ 桁数設定</button>
   </div>
 
@@ -104,7 +107,7 @@
           <td class="section-label">品番</td>
           <td>J21*4016013BB</td>
           <td class="section-label">図番</td>
-          <td><input type="text" name="zuban" value="3555-71" class="soft-required" data-soft-required="1" /></td>
+          <td><input type="text" name="zuban" value="3555-7" class="soft-required" data-soft-required="1" /></td>
         </tr>
         <tr>
           <td class="section-label">品名</td><td class="align-left">X2プロテクター</td>
@@ -116,7 +119,7 @@
           <td class="section-label">製造No</td>
           <td class="align-left">
             <div class="serial-wrap no-print">
-              <span class="serial-prefix" data-prefix>355571-</span>
+              <span class="serial-prefix" data-prefix>35557-</span>
               <input type="text" name="serial_no_suffix" inputmode="numeric" placeholder="001" class="soft-required" data-soft-required="1" readonly />
             </div>
             <span class="print-text" data-serial-print></span>
@@ -207,11 +210,11 @@
 
   <script>
     // === CONFIG ===
-    const APP_NS = '3555-71';
+    const APP_NS = '3555-7';
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxWxAa_dWQNoUPhWnkw3P22jgeW4vb44Z5ISuUyUWsAAroFzzE6iIVWMIpqqio6E5OgqA/exec';
     const COMPANY_LABEL = '東京精密発條株式会社';
     const serverPrefix = () => `${APP_NS}::${getSerialPrefix()}`;
-    const SERIAL_SCOPE = () => `tomei:serial:${APP_NS}:${getSerialPrefix() || '355571-'}`;
+    const SERIAL_SCOPE = () => `tomei:serial:${APP_NS}:${getSerialPrefix() || '35557-'}`;
     let PAD_DIGITS = 3; // Tomei default 3 (001)
 
     /* ---------- Helpers UI ---------- */
@@ -301,7 +304,7 @@
     function setSerialSuffix(num){ const s = formatSuffix(num); const inp = document.querySelector('input[name="serial_no_suffix"]'); if(!inp) return; inp.value = s; inp.dispatchEvent(new Event('input', { bubbles:true })); markSoftRequired(); }
     function wireSerialMirror() { const out = document.querySelector('[data-serial-print]'); const inp = document.querySelector('input[name="serial_no_suffix"]'); if (!out) return; const upd = () => { out.textContent = getSerialFull(); }; inp?.addEventListener('input', upd); upd(); }
     function computePrefixFromZuban(z){ const digits = String(z||'').replace(/[^0-9]/g,''); return digits ? `${digits}-` : ''; }
-    function applyPrefix(){ const z = getZuban(); const pref = computePrefixFromZuban(z); const span = document.querySelector('.serial-prefix'); if(span) span.textContent = pref || '355571-'; }
+    function applyPrefix(){ const z = getZuban(); const pref = computePrefixFromZuban(z); const span = document.querySelector('.serial-prefix'); if(span) span.textContent = pref || '35557-'; }
 
     /* ---------- GAS API ---------- */
     async function apiGAS(body){
@@ -379,6 +382,31 @@
     async function openDBIfNeeded(){ if(!__db) await openDB(); }
     async function putHandle(key, handle){ await openDBIfNeeded(); return new Promise((res,rej)=>{ const tx=__db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(handle,key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
     async function getHandle(key){ await openDBIfNeeded(); return new Promise((res,rej)=>{ const tx=__db.transaction(STORE,'readonly'); const r=tx.objectStore(STORE).get(key); r.onsuccess=()=>res(r.result||null); r.onerror=()=>rej(r.error); }); }
+
+    // ===== Toolbar: folder selection & badge =====
+    function setFolderKeyBadge(extraText, ok){
+      const badge = document.getElementById('folderKeyBadge');
+      if(!badge) return;
+      const base = '📁 ' + (typeof FIXED_KEY === 'string' ? FIXED_KEY : '未設定キー');
+      badge.textContent = extraText ? (base + ' · ' + extraText) : base;
+      badge.style.opacity = ok ? '1' : '0.7';
+    }
+    async function selectNASFolder(){
+      if(!window.showDirectoryPicker){ alert('このブラウザはフォルダ選択に対応していません。'); return; }
+      try{
+        const dir = await window.showDirectoryPicker({ mode:'readwrite' });
+        await navigator.storage?.persist?.();
+        await putHandle(FIXED_KEY, dir);
+        setFolderKeyBadge(dir.name || '設定済', true);
+      }catch(e){ /* canceled or error */ }
+    }
+    async function updateFolderKeyBadge(){
+      try{
+        const dir = await getHandle(FIXED_KEY);
+        if(dir){ setFolderKeyBadge(dir.name || '設定済', true); }
+        else { setFolderKeyBadge('未設定', false); }
+      }catch(e){ setFolderKeyBadge('未設定', false); }
+    }
     async function serialExists(dir, prefix, numeric){
       if(!dir.entries) return false;
       const pattern = new RegExp(`_${prefix}0*${numeric}\\.pdf$`);
@@ -450,10 +478,12 @@
     function updateDynamicSeal(){
       const whoSel = document.getElementById('stampWho'); const who = whoSel ? whoSel.value.trim() : '';
       const box = document.getElementById('stampBox'); const img = document.getElementById('stampMain');
-      if (!who) { if (img) img.src = ''; box?.setAttribute('data-visible','0'); return; }
+      const label = document.querySelector('.stamp-label');
+      if (!who) { if (img) img.src = ''; if(label) label.textContent=''; box?.setAttribute('data-visible','0'); return; }
       box?.setAttribute('data-visible','1');
       const ymd = document.querySelector('input[name="hakkohiduke"]')?.value || '';
       const url = renderRedSealPNG({ name: who, ymd, company: COMPANY_LABEL }); if (img) img.src = url || '';
+      if(label) label.textContent = who;
     }
 
     /* ---------- Settings ---------- */
@@ -493,6 +523,7 @@
       document.getElementById('stampWho')?.addEventListener('change', updateDynamicSeal);
       document.querySelector('select[name="inputter"]')?.addEventListener('change', updateDynamicSeal);
       updateDynamicSeal();
+      updateFolderKeyBadge();
       await ensureHasLockOrAcquire();
     });
     window.addEventListener('beforeunload', releaseSharedLock);

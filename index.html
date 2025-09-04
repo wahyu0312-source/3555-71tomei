@@ -63,7 +63,7 @@
     .td-measure-grid input.invalid { background:#ffebee; box-shadow:inset 0 0 0 1px #d32f2f; }
     .company-name { display:none !important; }
     .inspection-table th { background:#fff !important; }
-      .toolbar .key-badge { border:1px dashed #bbb; padding:6px 10px; border-radius:8px; font-size:13px; background:#f9fafb; align-self:center; }
+    .toolbar .key-badge { border:1px dashed #bbb; padding:6px 10px; border-radius:8px; font-size:13px; background:#f9fafb; align-self:center; }
   </style>
 </head>
 <body>
@@ -175,14 +175,14 @@
         </tr>
       </table>
 
-      <div style="margin:2mm 0;">
+      <div style="margin:2mm 0%;">
         <label style="font-weight:bold;">総合判定</label>
         <select name="final_judgment" class="no-print" style="margin-left:20mm;" disabled>
           <option>合格</option><option>否</option>
         </select>
         <span class="print-text"></span>
       </div>
-      <div style="margin:2mm 0;">
+      <div style="margin:2mm 0%;">
         <label style="font-weight:bold;">[備考]</label>
         <input type="text" name="bikou" value="" style="width:70%;" />
       </div>
@@ -218,15 +218,39 @@
     let PAD_DIGITS = 3; // Tomei default 3 (001)
 
     /* ---------- Helpers UI ---------- */
+    // ⛑️ CLEAR: JANGAN ubah 製造No (prefix & suffix dipertahankan)
     function clearAllFields() {
       const form = document.getElementById('inspection-form');
+
+      // Simpan nilai serial saat ini
+      const prefixEl = document.querySelector('.serial-prefix');
+      const suffixEl = document.querySelector('input[name="serial_no_suffix"]');
+      const savedPrefix = prefixEl ? prefixEl.textContent : '';
+      const savedSuffix = suffixEl ? suffixEl.value : '';
+
+      // Reset form
       form.reset();
+
+      // Kembalikan serial persis seperti sebelum clear
+      if (prefixEl) prefixEl.textContent = savedPrefix;
+      if (suffixEl) {
+        suffixEl.value = savedSuffix;
+        suffixEl.dispatchEvent(new Event('input', { bubbles:true }));
+      }
+
+      // Bersihkan lainnya
       document.getElementById('stampMain').src = '';
       document.getElementById('stampBox').setAttribute('data-visible','0');
       form.querySelectorAll('.td-measure-grid input.invalid').forEach(el => el.classList.remove('invalid'));
+
+      // Re-wire
       wireDateMirror(); wireEnterNavigationAll(); wireSerialMirror();
       wireSoftRequired(); markSoftRequired();
-      setTodayIfEmpty('hakkohiduke'); applyPrefix();
+
+      // Tanggal terbit bila kosong
+      setTodayIfEmpty('hakkohiduke');
+
+      // Penting: JANGAN panggil applyPrefix() di sini agar prefix tidak berubah
       document.getElementById('companyOutside').textContent = COMPANY_LABEL;
       updateDynamicSeal();
     }
@@ -272,7 +296,7 @@
     function wireDateMirror(){
       document.querySelectorAll('input[type="date"]').forEach(inp=>{
         const span=document.querySelector(`.print-text[data-from="${inp.name}"]`); if(!span) return;
-        const fmt=v=>v?v.replace(/(\d{4})-(\d{2})-(\d{2})/,'$1/$2/$3'):'';
+        const fmt=v=>v?v.replace(/(\d{4})-(\d{2})-(\d{2})/,'$1/$2/$3'):''; // YYYY/MM/DD
         const upd=()=>span.textContent=fmt(inp.value);
         inp.addEventListener('change',()=>{ upd(); markSoftRequired(); updateDynamicSeal(); }); upd();
       });

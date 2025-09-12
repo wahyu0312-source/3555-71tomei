@@ -93,7 +93,63 @@
     .company-name { display:none !important; }
     .inspection-table th { background:#fff !important; }
     .toolbar .key-badge { border:1px dashed #bbb; padding:6px 10px; border-radius:8px; font-size:13px; background:#f9fafb; align-self:center; }
-    
+
+    /* =========================
+       HEADER FIX: simetris, anti overflow,
+       dan tetap mendukung soft highlight
+       ========================= */
+    .header-table{
+      table-layout:fixed;              /* kolom konsisten di semua baris */
+      width:100%;
+    }
+    .header-table th, .header-table td{
+      overflow:hidden;                 /* cegah konten keluar garis */
+    }
+
+    /* override inline width (mis. 25%) pada sel tertentu */
+    .header-table td[style]{ width:auto !important; }
+
+    /* Tetapkan lebar 6 kolom (total 100%) */
+    .header-table tr > *:nth-child(1){ width:12% !important; }  /* label 1 */
+    .header-table tr > *:nth-child(2){ width:21% !important; }  /* nilai 1 */
+    .header-table tr > *:nth-child(3){ width:12% !important; }  /* label 2 */
+    .header-table tr > *:nth-child(4){ width:21% !important; }  /* nilai 2 */
+    .header-table tr > *:nth-child(5){ width:12% !important; }  /* label 3 */
+    .header-table tr > *:nth-child(6){ width:22% !important; }  /* nilai 3 (kanan) */
+
+    /* Input standar di sel kanan agar patuh lebar sel */
+    .header-table .align-left > input{
+      display:block;
+      width:100%;
+      max-width:100%;
+    }
+
+    /* Khusus 製造No: prefix + suffix rapi */
+    .header-table .serial-wrap{
+      display:flex;
+      align-items:center;
+      gap:1mm;
+      width:100%;
+      max-width:100%;
+    }
+    .header-table .serial-wrap .serial-prefix{
+      white-space:nowrap;              /* '35557-' tidak pecah */
+      flex:0 0 auto;
+    }
+    .header-table .serial-wrap input[name="serial_no_suffix"]{
+      width:auto !important;           /* override aturan global width:100% */
+      flex:1 1 0;
+      min-width:0;                     /* boleh mengecil saat sempit */
+      max-width:100%;
+      height:100%;
+      padding:0 1mm;
+      box-sizing:border-box;
+    }
+    /* Soft highlight tetap tampil pada suffix */
+    .header-table .serial-wrap input[name="serial_no_suffix"].pending{
+      background:var(--soft-bg) !important;
+      box-shadow: inset 0 0 0 1px var(--soft-border) !important;
+    }
   </style>
 </head>
 <body>
@@ -248,39 +304,24 @@
     let PAD_DIGITS = 3; // Tomei default 3 (001)
 
     /* ---------- Helpers UI ---------- */
-    // ⛑️ CLEAR: JANGAN ubah 製造No (prefix & suffix dipertahankan)
     function clearAllFields() {
       const form = document.getElementById('inspection-form');
-
-      // Simpan nilai serial saat ini
       const prefixEl = document.querySelector('.serial-prefix');
       const suffixEl = document.querySelector('input[name="serial_no_suffix"]');
       const savedPrefix = prefixEl ? prefixEl.textContent : '';
       const savedSuffix = suffixEl ? suffixEl.value : '';
-
-      // Reset form
       form.reset();
-
-      // Kembalikan serial persis seperti sebelum clear
       if (prefixEl) prefixEl.textContent = savedPrefix;
       if (suffixEl) {
         suffixEl.value = savedSuffix;
         suffixEl.dispatchEvent(new Event('input', { bubbles:true }));
       }
-
-      // Bersihkan lainnya
       document.getElementById('stampMain').src = '';
       document.getElementById('stampBox').setAttribute('data-visible','0');
       form.querySelectorAll('.td-measure-grid input.invalid').forEach(el => el.classList.remove('invalid'));
-
-      // Re-wire
       wireDateMirror(); wireEnterNavigationAll(); wireSerialMirror();
       wireSoftRequired(); markSoftRequired();
-
-      // Tanggal terbit bila kosong
       setTodayIfEmpty('hakkohiduke');
-
-      // Penting: JANGAN panggil applyPrefix() di sini agar prefix tidak berubah
       document.getElementById('companyOutside').textContent = COMPANY_LABEL;
       updateDynamicSeal();
     }
@@ -506,11 +547,11 @@
 
     /* ---------- Cap merah (dinamis) ---------- */
     const INK = '#d42828';
-   function formatSealYMD(ymd){
-  if(!ymd) return '';
-  const [y,m,d] = ymd.split('-');
-  return `${y}.${m}.${d}`;
-}
+    function formatSealYMD(ymd){
+      if(!ymd) return '';
+      const [y,m,d] = ymd.split('-');
+      return `${y}.${m}.${d}`;
+    }
     function drawArcText(ctx, text, cx, cy, radius, startDeg, endDeg){
       const chars = Array.from(text); if (!chars.length) return;
       const start = startDeg * Math.PI/180, end = endDeg * Math.PI/180, step = (end - start) / (chars.length - 1);
@@ -527,12 +568,12 @@
       const HEAD_KANJI_SIZE = Math.round(size * 0.16); g.font=`800 ${HEAD_KANJI_SIZE}px "Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif`; g.fillText('検査合格', cx, cy - size*0.225);
       const bandH=size*0.14, y1=cy-bandH/2, y2=cy+bandH/2; g.lineWidth=Math.max(1, size*0.009);
       g.beginPath(); g.moveTo(cx-R*0.78,y1); g.lineTo(cx+R*0.78,y1); g.stroke(); g.beginPath(); g.moveTo(cx-R*0.78,y2); g.lineTo(cx+R*0.78,y2); g.stroke();
-     const dateStr = formatSealYMD(ymd);
-if (dateStr) {
-  const full = `${dateStr}`; // contoh: 2025/09/11
-  g.font = `900 ${Math.round(size*0.16)}px "Yu Mincho","Yu Gothic",sans-serif`;
-  g.fillText(full, cx, cy);
-}
+      const dateStr = formatSealYMD(ymd);
+      if (dateStr) {
+        const full = `${dateStr}`;
+        g.font = `900 ${Math.round(size*0.16)}px "Yu Mincho","Yu Gothic",sans-serif`;
+        g.fillText(full, cx, cy);
+      }
       if(name){ const nameY = cy + size * 0.185; g.font=`700 ${Math.round(size*0.12)}px "Yu Mincho","MS Mincho",serif`; g.fillText(name, cx, nameY); }
       const innerMargin = size * 0.028, companyRadius = R - circleStroke - innerMargin; g.font=`700 ${Math.round(size*0.095)}px "Yu Mincho","MS Mincho",serif`;
       drawArcText(g, company, cx, cy, companyRadius, 160, 20);

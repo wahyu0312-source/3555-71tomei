@@ -80,7 +80,7 @@
       color:#6b7280; opacity:1;
     }
     [data-soft-required].pending:focus{
-      outline:2px solid rgba(229,178,0,.6);
+      outline:2px solid rgba(229, 206, 0, 0.918);
       outline-offset:1px;
     }
 
@@ -93,6 +93,7 @@
     .company-name { display:none !important; }
     .inspection-table th { background:#fff !important; }
     .toolbar .key-badge { border:1px dashed #bbb; padding:6px 10px; border-radius:8px; font-size:13px; background:#f9fafb; align-self:center; }
+    
   </style>
 </head>
 <body>
@@ -222,7 +223,7 @@
           <div id="companyOutside" class="company-outside">東京精密発條株式会社</div>
           <select id="stampWho" class="no-print">
             <option value="">- 印鑑選択 -</option>
-            <option value="中川部長">中川部長</option>
+            <option value="中川部長">中川</option>
             <option value="長谷部">長谷部</option>
             <option value="石橋">石橋</option>
             <option value="都合">都合</option>
@@ -505,7 +506,11 @@
 
     /* ---------- Cap merah (dinamis) ---------- */
     const INK = '#d42828';
-    function formatSealDate(ymd){ if(!ymd) return ''; const [y,m,d] = ymd.split('-').map(Number); const r = Math.max(1, y - 2018); return `${r}.${m}.${d}`; }
+   function formatSealYMD(ymd){
+  if(!ymd) return '';
+  const [y,m,d] = ymd.split('-');
+  return `${y}.${m}.${d}`;
+}
     function drawArcText(ctx, text, cx, cy, radius, startDeg, endDeg){
       const chars = Array.from(text); if (!chars.length) return;
       const start = startDeg * Math.PI/180, end = endDeg * Math.PI/180, step = (end - start) / (chars.length - 1);
@@ -522,7 +527,12 @@
       const HEAD_KANJI_SIZE = Math.round(size * 0.16); g.font=`800 ${HEAD_KANJI_SIZE}px "Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif`; g.fillText('検査合格', cx, cy - size*0.225);
       const bandH=size*0.14, y1=cy-bandH/2, y2=cy+bandH/2; g.lineWidth=Math.max(1, size*0.009);
       g.beginPath(); g.moveTo(cx-R*0.78,y1); g.lineTo(cx+R*0.78,y1); g.stroke(); g.beginPath(); g.moveTo(cx-R*0.78,y2); g.lineTo(cx+R*0.78,y2); g.stroke();
-      const dateStr = formatSealDate(ymd); if (dateStr) { const full = `令和 ${dateStr}`; g.font = `900 ${Math.round(size*0.16)}px "Yu Mincho","Yu Gothic",sans-serif`; g.fillText(full, cx, cy); }
+     const dateStr = formatSealYMD(ymd);
+if (dateStr) {
+  const full = `${dateStr}`; // contoh: 2025/09/11
+  g.font = `900 ${Math.round(size*0.16)}px "Yu Mincho","Yu Gothic",sans-serif`;
+  g.fillText(full, cx, cy);
+}
       if(name){ const nameY = cy + size * 0.185; g.font=`700 ${Math.round(size*0.12)}px "Yu Mincho","MS Mincho",serif`; g.fillText(name, cx, nameY); }
       const innerMargin = size * 0.028, companyRadius = R - circleStroke - innerMargin; g.font=`700 ${Math.round(size*0.095)}px "Yu Mincho","MS Mincho",serif`;
       drawArcText(g, company, cx, cy, companyRadius, 160, 20);
